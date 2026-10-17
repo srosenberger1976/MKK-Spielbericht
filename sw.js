@@ -1,21 +1,21 @@
-// Versions-Nummer erhöht (v2), um alten Cache radikal zu löschen
-const CACHE_NAME = 'mkk-dart-v4';
+const CACHE_NAME = 'mkk-dart-v5'; // Erhöht auf v5, damit alle Browser den alten Speicher löschen
 const ASSETS = [
   '/MKK-Spielbericht/',
   '/MKK-Spielbericht/index.html',
   '/MKK-Spielbericht/manifest.json'
 ];
 
-// Installieren und sofort aktivieren ohne zu warten
+// Installieren und Assets in den Cache laden
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(ASSETS);
+    })
   );
+  self.skipWaiting();
 });
 
-// Alten, blockierenden Cache restlos entfernen
+// Alten Cache löschen
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -26,18 +26,18 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
   );
+  self.clients.claim();
 });
 
-// Netzwerk-Anfragen verarbeiten
+// Anfragen verarbeiten
 self.addEventListener('fetch', event => {
-  // Verhindert, dass der Service Worker GitHub-Raw-Anfragen blockiert
-  if (event.request.url.includes('://githubusercontent.com')) {
-    event.respondWith(fetch(event.request));
-    return;
+  // WICHTIG: Wenn nach der spieler.txt gefragt wird, GEHE IMMER DIREKT INS INTERNET!
+  if (event.request.url.includes('spieler.txt')) {
+    return; // Ignoriert den Cache komplett für diese Datei
   }
-  
+
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       return cachedResponse || fetch(event.request);
