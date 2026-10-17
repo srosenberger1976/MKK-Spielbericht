@@ -1,12 +1,12 @@
-const CACHE_NAME = 'mkk-dart-v1';
+// Versions-Nummer erhöht (v2), um alten Cache radikal zu löschen
+const CACHE_NAME = 'mkk-dart-v2';
 const ASSETS = [
   '/MKK-Spielbericht/',
   '/MKK-Spielbericht/index.html',
-  '/MKK-Spielbericht/spieler.txt',
   '/MKK-Spielbericht/manifest.json'
 ];
 
-// Installieren des Service Workers und Cachen der Dateien
+// Installieren und sofort aktivieren ohne zu warten
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -15,7 +15,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// Aktivieren und alte Caches löschen
+// Alten, blockierenden Cache restlos entfernen
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -30,11 +30,16 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Netzwerk-Anfragen abfangen
+// Netzwerk-Anfragen verarbeiten
 self.addEventListener('fetch', event => {
+  // Verhindert, dass der Service Worker GitHub-Raw-Anfragen blockiert
+  if (event.request.url.includes('://githubusercontent.com')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      // Wenn es im Cache ist, gib es zurück, ansonsten lade es aus dem Netzwerk
       return cachedResponse || fetch(event.request);
     })
   );
