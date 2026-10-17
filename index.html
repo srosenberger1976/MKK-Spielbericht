@@ -771,6 +771,9 @@ function switchTab(tabName) {
 
 
 
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/MKK-Spielbericht/sw.js')
@@ -778,7 +781,8 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(err => console.error('Service Worker Fehler:', err));
   }
 
-  const spielerTextarea = document.getElementById("txt_import_area") || document.querySelector("textarea"); 
+  // Hier wird die Textbox jetzt JEDES MAL korrekt über ihre echte ID geladen!
+  const spielerTextarea = document.getElementById("txt_import_area"); 
 
   // 1. ZUERST: Lokales Backup aus dem Browser laden, falls vorhanden
   const savedTeams = localStorage.getItem("mkk_dart_teams");
@@ -787,28 +791,21 @@ document.addEventListener("DOMContentLoaded", () => {
   if (savedRawText && spielerTextarea) { spielerTextarea.value = savedRawText; }
   initTeamDropdowns();
 
- 
-
-
-
-
-
-
-
-
-  // 2. DANACH: Das frische Update direkt aus dem eigenen Ordner laden (umgeht die CORS-Sperre!)
+  // 2. DANACH: Das frische Update von GitHub ziehen (Lokaler, sicherer Abruf)
   const githubSpielerUrl = "./spieler.txt";
   
   if (spielerTextarea) {
-    fetch(githubSpielerUrl, { mode: 'cors' })
+    fetch(githubSpielerUrl)
       .then(response => {
-        if (!response.ok) throw new Error("Fehler beim Abrufen der lokalen spieler.txt");
+        if (!response.ok) throw new Error("Fehler beim Abrufen der Datei");
         return response.text();
       })
       .then(daten => {
         if (daten && daten.trim().length > 0) {
+          // Schreibt den Text jetzt direkt und ohne Umwege in das Feld
           spielerTextarea.value = daten.trim();
-          console.log("Spieler-Daten erfolgreich ins Textfeld geladen.");
+          console.log("Daten erfolgreich ins Feld geschrieben.");
+          
           try {
             importTeamsFromTxt();
           } catch (e) {
@@ -817,15 +814,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       })
       .catch(error => {
-        console.error("Laden der spieler.txt fehlgeschlagen:", error);
-        // Sicherheitsanker: Falls der Browser komplett blockiert, nutzen wir den Offline-Speicher
-        if (spielerTextarea.value && spielerTextarea.value.trim()) { 
+        console.error("Abruf fehlgeschlagen, nutze Offline-Stand:", error);
+        if (spielerTextarea.value && spielerTextarea.value.trim()) {
           try { importTeamsFromTxt(); } catch(e){}
         }
       });
   }
-
-
 
   // 3. Alte Dropdown-Auswahlen wiederherstellen
   const savedDropdowns = localStorage.getItem("mkk_live_dropdown_state");
@@ -880,6 +874,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el.addEventListener("input", () => { syncMetaToLabels(); saveActiveDropdowns(); });
   });
 });
+
 
 
 
