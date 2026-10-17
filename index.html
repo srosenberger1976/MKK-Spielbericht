@@ -752,27 +752,31 @@ function switchTab(tabName) {
 document.addEventListener("DOMContentLoaded", () => {
  if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/MKK-Spielbericht/sw.js')
-  .then(reg => console.log('Service Worker erfolgreich registriert!', reg))
-  .catch(err => console.error('Service Worker Registrierung fehlgeschlagen:', err));
+   .then(reg => {
+    console.log('Service Worker registriert!');
+    reg.update(); // Sucht sofort nach Updates im Hintergrund
+   })
+   .catch(err => console.error('Service Worker Registrierung fehlgeschlagen:', err));
  }
 
+ // DER FIX: Deine echten Pfade und der ID-unabhängige Textfeld-Finder
  const githubSpielerUrl = "https://github.io";
- const spielerTextarea = document.getElementById("txt_import_area"); 
+ const spielerTextarea = document.getElementById("txt_import_area") || document.querySelector("textarea"); 
 
  if (spielerTextarea) {
   fetch(githubSpielerUrl)
-  .then(response => {
-   if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
-   return response.text();
-  })
-  .then(daten => {
-   spielerTextarea.value = daten.trim();
-   console.log("Spieler erfolgreich von GitHub geladen!");
-   importTeamsFromTxt();
-  })
-  .catch(error => {
-   console.error("GitHub-Update fehlgeschlagen:", error);
-  });
+   .then(response => {
+    if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
+    return response.text();
+   })
+   .then(daten => {
+    spielerTextarea.value = daten.trim();
+    console.log("Spieler erfolgreich von GitHub geladen!");
+    importTeamsFromTxt(); // Trägt die Namen ohne Absturz in die Dropdowns ein
+   })
+   .catch(error => {
+    console.error("GitHub-Update fehlgeschlagen:", error);
+   });
  }
 
  const savedTeams = localStorage.getItem("mkk_dart_teams");
