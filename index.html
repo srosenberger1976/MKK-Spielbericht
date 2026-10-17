@@ -332,51 +332,65 @@ const mkkSchedule = [
 ];
 let matchResults = {}; let substitutions = []; let playerScores = {}; let activePopupMatchId = null;
 let isMatchPlayable = false; let importedTeams = {};
+
+
+
+
+
 function importTeamsFromTxt() {
- const text = document.getElementById("txt_import_area").value;
- if(!text.trim()) { return; }
- importedTeams = {};
- 
- text.split("\n").forEach(line => {
-  const trimmed = line.trim(); if(!trimmed) return;
-  const firstComma = trimmed.indexOf(","); const lastComma = trimmed.lastIndexOf(",");
+  const text = document.getElementById("txt_import_area").value;
+  if(!text.trim()) { return; }
   
-  if(firstComma !== -1 && lastComma !== -1 && firstComma !== lastComma) {
-   const teamName = trimmed.substring(0, firstComma).trim();
-   const passNum = trimmed.substring(lastComma + 1).trim();
-// Tausche den gesamten Block ab "let rawName = ..." bis zum Ende der Schleife aus:
-
-let rawName = trimmed.substring(firstComma + 1, lastComma).trim();
-
-// Wenn der Name leer ist (Platzhalter), diese Zeile einfach überspringen und mit der nächsten weitermachen!
-if(!rawName || rawName === "," || rawName.replace(/,/g, "").trim() === "") {
-    return; // Das springt im .forEach-Loop sauber zur nächsten Zeile!
-}
-
-if(rawName.includes(",")) {
-    const parts = rawName.split(",").map(n => n.trim());
-    if (parts && parts.length >= 2 && parts[0] && parts[1]) { 
-        rawName = parts[1] + " " + parts[0]; 
-    } else if(parts && parts[0]) {
-        rawName = parts[0];
-    } else {
-        return; // Auch hier im Fehlerfall einfach überspringen
+  importedTeams = {};
+  
+  // Teilt den Text in einzelne Zeilen auf
+  const lines = text.split("\n");
+  
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if(!trimmed) return; // Leere Zeilen komplett überspringen
+    
+    try {
+      // Teilt die Zeile strikt nach Kommas auf
+      const parts = trimmed.split(",").map(item => item.trim());
+      
+      // Eine gültige Zeile MUSS mindestens Team und Nachname haben
+      if (parts.length < 2) return; 
+      
+      const teamName = parts[0];
+      const nachname = parts[1];
+      const vorname = parts[2] || ""; // Wenn leer, dann leerer Text
+      const passNum = parts[3] || "";  // Wenn leer, dann leerer Text
+      
+      // Wenn kein Nachname da ist oder es ein Platzhalter ist (z.B. ,,) -> überspringen
+      if (!teamName || !nachname || nachname === "") return;
+      
+      // Setze den Namen zusammen (Vorname Nachname)
+      let fullName = vorname ? vorname + " " + nachname : nachname;
+      
+      // Falls der Name immer noch leer sein sollte, abbrechen
+      if (!fullName.trim()) return;
+      
+      // Falls das Team noch nicht existiert, im Speicher anlegen
+      if(!importedTeams[teamName]) { 
+        importedTeams[teamName] = []; 
+      }
+      
+      // Spieler hinzufügen, falls er nicht doppelt ist
+      if(!importedTeams[teamName].some(p => p.name === fullName)) { 
+        importedTeams[teamName].push({ name: fullName, pass: passNum }); 
+      }
+    } catch (e) {
+      console.log("Fehler bei Zeile, überspringe sie:", trimmed, e);
     }
+  });
+  
+  // Daten dauerhaft im Browser speichern
+  localStorage.setItem("mkk_dart_teams", JSON.stringify(importedTeams));
+  localStorage.setItem("mkk_dart_raw_text", text);
+  initTeamDropdowns();
 }
 
-if(!rawName.trim()) return;
-
-if(!importedTeams[teamName]) { importedTeams[teamName] = []; }
-if(!importedTeams[teamName].some(p => p.name === rawName)) { 
-    importedTeams[teamName].push({ name: rawName, pass: passNum }); 
-}
-
-  }
- });
- localStorage.setItem("mkk_dart_teams", JSON.stringify(importedTeams));
- localStorage.setItem("mkk_dart_raw_text", text);
- initTeamDropdowns();
-}
 
 function initTeamDropdowns() {
  const sHome = document.getElementById("team_home"); const sGuest = document.getElementById("team_guest");
