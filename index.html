@@ -766,28 +766,28 @@ document.addEventListener("DOMContentLoaded", () => {
  
  initTeamDropdowns();
 
- // 2. DANACH: Das frische Update von GitHub ziehen und eintragen (Überschreibt die Leere)
- const githubSpielerUrl = "https://githubusercontent.com";
- 
- if (spielerTextarea) {
-  fetch(githubSpielerUrl)
-   .then(response => {
-    if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
-    return response.text();
-   })
-   .then(daten => {
-    if (daten.trim().length > 0) {
-     spielerTextarea.value = daten.trim();
-     console.log("Spieler erfolgreich von GitHub aktualisiert!");
-     importTeamsFromTxt(); // Befüllt die Dropdowns absturzsicher
-    }
-   })
-   .catch(error => {
-    console.error("GitHub-Live-Update fehlgeschlagen, nutze lokalen Stand:", error);
-    // Falls offline, liest er zumindest den alten Stand ein
-    if (spielerTextarea.value.trim()) { importTeamsFromTxt(); }
-   });
- }
+// 2. DANACH: Das frische Update von GitHub ziehen und eintragen (Überschreibt die Leere)
+const githubSpielerUrl = "https://githubusercontent.com";
+
+if (spielerTextarea) {
+ fetch(githubSpielerUrl)
+  .then(response => {
+   if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
+   return response.text();
+  })
+  .then(daten => {
+   if (daten.trim().length > 0) {
+    spielerTextarea.value = daten.trim();
+    console.log("Spieler erfolgreich von GitHub aktualisiert!");
+    importTeamsFromTxt(); // Befüllt die Dropdowns absturzsicher
+   }
+  })
+  .catch(error => {
+   console.error("GitHub-Live-Update fehlgeschlagen, nutze lokalen Stand:", error);
+   if (spielerTextarea.value.trim()) { importTeamsFromTxt(); }
+  });
+}
+
  
  // 3. Alte Dropdown-Auswahlen wiederherstellen
  const savedDropdowns = localStorage.getItem("mkk_live_dropdown_state");
