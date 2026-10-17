@@ -342,54 +342,44 @@ function importTeamsFromTxt() {
   if(!text.trim()) { return; }
   
   importedTeams = {};
-  
-  // Teilt den Text in einzelne Zeilen auf
   const lines = text.split("\n");
   
   lines.forEach(line => {
     const trimmed = line.trim();
-    if(!trimmed) return; // Leere Zeilen komplett überspringen
+    if(!trimmed || trimmed === "," || trimmed.replace(/,/g, "").trim() === "") return;
     
     try {
-      // Teilt die Zeile strikt nach Kommas auf
       const parts = trimmed.split(",").map(item => item.trim());
-      
-      // Eine gültige Zeile MUSS mindestens Team und Nachname haben
-      if (parts.length < 2) return; 
+      if (parts.length < 2) return;
       
       const teamName = parts[0];
       const nachname = parts[1];
-      const vorname = parts[2] || ""; // Wenn leer, dann leerer Text
-      const passNum = parts[3] || "";  // Wenn leer, dann leerer Text
+      const vorname = parts[2] || "";
+      const passNum = parts[3] || "";
       
-      // Wenn kein Nachname da ist oder es ein Platzhalter ist (z.B. ,,) -> überspringen
+      // Falls Pflichtfelder leer sind oder als Platzhalter dienen, Zeile überspringen
       if (!teamName || !nachname || nachname === "") return;
       
-      // Setze den Namen zusammen (Vorname Nachname)
       let fullName = vorname ? vorname + " " + nachname : nachname;
-      
-      // Falls der Name immer noch leer sein sollte, abbrechen
       if (!fullName.trim()) return;
       
-      // Falls das Team noch nicht existiert, im Speicher anlegen
       if(!importedTeams[teamName]) { 
         importedTeams[teamName] = []; 
       }
       
-      // Spieler hinzufügen, falls er nicht doppelt ist
       if(!importedTeams[teamName].some(p => p.name === fullName)) { 
         importedTeams[teamName].push({ name: fullName, pass: passNum }); 
       }
     } catch (e) {
-      console.log("Fehler bei Zeile, überspringe sie:", trimmed, e);
+      console.log("Zeile ignoriert:", trimmed);
     }
   });
   
-  // Daten dauerhaft im Browser speichern
   localStorage.setItem("mkk_dart_teams", JSON.stringify(importedTeams));
   localStorage.setItem("mkk_dart_raw_text", text);
   initTeamDropdowns();
 }
+
 
 
 function initTeamDropdowns() {
@@ -787,28 +777,48 @@ document.addEventListener("DOMContentLoaded", () => {
  
  initTeamDropdowns();
 
-// 2. DANACH: Das frische Update von GitHub ziehen und eintragen (Überschreibt die Leere)
-const githubSpielerUrl = "https://githubusercontent.com";
 
 
-if (spielerTextarea) {
- fetch(githubSpielerUrl)
-  .then(response => {
-   if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
-   return response.text();
-  })
-  .then(daten => {
-   if (daten.trim().length > 0) {
-    spielerTextarea.value = daten.trim();
-    console.log("Spieler erfolgreich von GitHub aktualisiert!");
-    importTeamsFromTxt(); // Befüllt die Dropdowns absturzsicher
-   }
-  })
-  .catch(error => {
-   console.error("GitHub-Live-Update fehlgeschlagen, nutze lokalen Stand:", error);
-   if (spielerTextarea.value.trim()) { importTeamsFromTxt(); }
-  });
-}
+
+
+
+
+
+
+
+
+  // 2. DANACH: Das frische Update von GitHub ziehen und eintragen
+  const githubSpielerUrl = "https://githubusercontent.com";
+  
+  if (spielerTextarea) {
+    fetch(githubSpielerUrl)
+      .then(response => {
+        if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
+        return response.text();
+      })
+      .then(daten => {
+        if (daten && daten.trim().length > 0) {
+          // Zuerst den Text SICHER in das Textfeld schreiben (damit es nicht leer bleibt!)
+          spielerTextarea.value = daten.trim();
+          console.log("Text erfolgreich ins Feld eingetragen.");
+          
+          // Danach versuchen wir die Dropdowns zu befüllen
+          try {
+            importTeamsFromTxt();
+            console.log("Spieler erfolgreich in Dropdowns geladen!");
+          } catch (importError) {
+            console.error("Fehler beim Befüllen der Dropdowns, aber Text ist da:", importError);
+          }
+        }
+      })
+      .catch(error => {
+        console.error("GitHub-Live-Update fehlgeschlagen, nutze lokalen Stand:", error);
+        if (spielerTextarea.value && spielerTextarea.value.trim()) { 
+          try { importTeamsFromTxt(); } catch(e){}
+        }
+      });
+  }
+
 
  
  // 3. Alte Dropdown-Auswahlen wiederherstellen
