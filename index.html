@@ -752,18 +752,23 @@ function switchTab(tabName) {
 document.addEventListener("DOMContentLoaded", () => {
  if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/MKK-Spielbericht/sw.js')
-   .then(reg => {
-    console.log('Service Worker registriert!');
-    reg.update(); // Sucht sofort nach Updates im Hintergrund
-   })
-   .catch(err => console.error('Service Worker Registrierung fehlgeschlagen:', err));
+   .then(reg => { console.log('Service Worker registriert!'); reg.update(); })
+   .catch(err => console.error('Service Worker Fehler:', err));
  }
-
- // DER FIX: Deine echten Pfade und der ID-unabhängige Textfeld-Finder
-const githubSpielerUrl = "https://githubusercontent.com";
 
  const spielerTextarea = document.getElementById("txt_import_area") || document.querySelector("textarea"); 
 
+ // 1. ZUERST: Lokales Backup aus dem Browser laden, falls vorhanden
+ const savedTeams = localStorage.getItem("mkk_dart_teams");
+ if (savedTeams) { importedTeams = JSON.parse(savedTeams); }
+ const savedRawText = localStorage.getItem("mkk_dart_raw_text");
+ if (savedRawText && spielerTextarea) { spielerTextarea.value = savedRawText; }
+ 
+ initTeamDropdowns();
+
+ // 2. DANACH: Das frische Update von GitHub ziehen und eintragen (Überschreibt die Leere)
+ const githubSpielerUrl = "https://githubusercontent.com";
+ 
  if (spielerTextarea) {
   fetch(githubSpielerUrl)
    .then(response => {
@@ -771,22 +776,20 @@ const githubSpielerUrl = "https://githubusercontent.com";
     return response.text();
    })
    .then(daten => {
-    spielerTextarea.value = daten.trim();
-    console.log("Spieler erfolgreich von GitHub geladen!");
-    importTeamsFromTxt(); // Trägt die Namen ohne Absturz in die Dropdowns ein
+    if (daten.trim().length > 0) {
+     spielerTextarea.value = daten.trim();
+     console.log("Spieler erfolgreich von GitHub aktualisiert!");
+     importTeamsFromTxt(); // Befüllt die Dropdowns absturzsicher
+    }
    })
    .catch(error => {
-    console.error("GitHub-Update fehlgeschlagen:", error);
+    console.error("GitHub-Live-Update fehlgeschlagen, nutze lokalen Stand:", error);
+    // Falls offline, liest er zumindest den alten Stand ein
+    if (spielerTextarea.value.trim()) { importTeamsFromTxt(); }
    });
  }
-
- const savedTeams = localStorage.getItem("mkk_dart_teams");
- if (savedTeams) { importedTeams = JSON.parse(savedTeams); }
- const savedRawText = localStorage.getItem("mkk_dart_raw_text");
- if (savedRawText && spielerTextarea) { spielerTextarea.value = savedRawText; }
  
- initTeamDropdowns();
- 
+ // 3. Alte Dropdown-Auswahlen wiederherstellen
  const savedDropdowns = localStorage.getItem("mkk_live_dropdown_state");
  if(savedDropdowns) {
   const dropdownState = JSON.parse(savedDropdowns);
@@ -822,6 +825,8 @@ const githubSpielerUrl = "https://githubusercontent.com";
   el.addEventListener("input", () => { syncMetaToLabels(); saveActiveDropdowns(); });
  });
 });
+
+
 
 let deferredPrompt;
 const popup = document.getElementById('pwaInstallPopup');
