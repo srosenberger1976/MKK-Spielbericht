@@ -344,30 +344,33 @@ function importTeamsFromTxt() {
   if(firstComma !== -1 && lastComma !== -1 && firstComma !== lastComma) {
    const teamName = trimmed.substring(0, firstComma).trim();
    const passNum = trimmed.substring(lastComma + 1).trim();
-   let rawName = trimmed.substring(firstComma + 1, lastComma).trim();
-   
-   // DER FIX: Wenn der Name komplett leer ist (z.B. bei doppelten Kommas), springe zur nächsten Zeile!
-   if(!rawName || rawName === "," || rawName.replace(/,/g, "").trim() === "") return;
-   
+// Tausche den gesamten Block ab "let rawName = ..." bis zum Ende der Schleife aus:
+
+let rawName = trimmed.substring(firstComma + 1, lastComma).trim();
+
+// Wenn der Name leer ist (Platzhalter), diese Zeile einfach überspringen und mit der nächsten weitermachen!
+if(!rawName || rawName === "," || rawName.replace(/,/g, "").trim() === "") {
+    return; // Das springt im .forEach-Loop sauber zur nächsten Zeile!
+}
+
 if(rawName.includes(",")) {
     const parts = rawName.split(",").map(n => n.trim());
-    // Prüft, ob wirklich Vorname UND Nachname existieren
-    if(parts && parts.length >= 2 && parts[0] && parts[1]) { 
+    if (parts && parts.length >= 2 && parts[0] && parts[1]) { 
         rawName = parts[1] + " " + parts[0]; 
     } else if(parts && parts[0]) {
         rawName = parts[0];
     } else {
-        // Wenn es ein leerer Platzhalter ist, ignorieren und weitergehen
-        return; 
+        return; // Auch hier im Fehlerfall einfach überspringen
     }
 }
 
-   
-   if(!rawName.trim()) return;
-   if(!importedTeams[teamName]) { importedTeams[teamName] = []; }
-   if(!importedTeams[teamName].some(p => p.name === rawName)) { 
+if(!rawName.trim()) return;
+
+if(!importedTeams[teamName]) { importedTeams[teamName] = []; }
+if(!importedTeams[teamName].some(p => p.name === rawName)) { 
     importedTeams[teamName].push({ name: rawName, pass: passNum }); 
-   }
+}
+
   }
  });
  localStorage.setItem("mkk_dart_teams", JSON.stringify(importedTeams));
