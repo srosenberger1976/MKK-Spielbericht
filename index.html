@@ -336,20 +336,34 @@ function importTeamsFromTxt() {
  const text = document.getElementById("txt_import_area").value;
  if(!text.trim()) { return; }
  importedTeams = {};
+ 
  text.split("\n").forEach(line => {
   const trimmed = line.trim(); if(!trimmed) return;
   const firstComma = trimmed.indexOf(","); const lastComma = trimmed.lastIndexOf(",");
+  
   if(firstComma !== -1 && lastComma !== -1 && firstComma !== lastComma) {
    const teamName = trimmed.substring(0, firstComma).trim();
    const passNum = trimmed.substring(lastComma + 1).trim();
    let rawName = trimmed.substring(firstComma + 1, lastComma).trim();
+   
+   // DER FIX: Wenn der Name komplett leer ist (z.B. bei doppelten Kommas), springe zur nächsten Zeile!
+   if(!rawName || rawName === "," || rawName.replace(/,/g, "").trim() === "") return;
+   
    if(rawName.includes(",")) {
     const parts = rawName.split(",").map(n => n.trim());
-    if(parts && parts.length >= 2) { rawName = parts + " " + parts; }
+    // Nur zusammensetzen, wenn auch wirklich Fragmente da sind
+    if(parts && parts.length >= 2 && parts[0] && parts[1]) { 
+     rawName = parts[1] + " " + parts[0]; 
+    } else if(parts && parts[0]) {
+     rawName = parts[0];
+    }
    }
-   if(!rawName) return;
+   
+   if(!rawName.trim()) return;
    if(!importedTeams[teamName]) { importedTeams[teamName] = []; }
-   if(!importedTeams[teamName].some(p => p.name === rawName)) { importedTeams[teamName].push({ name: rawName, pass: passNum }); }
+   if(!importedTeams[teamName].some(p => p.name === rawName)) { 
+    importedTeams[teamName].push({ name: rawName, pass: passNum }); 
+   }
   }
  });
  localStorage.setItem("mkk_dart_teams", JSON.stringify(importedTeams));
