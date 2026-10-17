@@ -104,11 +104,16 @@
  </div>
 
  <div id="tab_setup" class="tab-content active">
-  <div class="import-box">
-   <label style="font-weight: bold; color: #ffcc00;"> 📋 Spieler-TXT hier einfügen und speichern (Format: Team, Nachname, Vorname, Passnummer):</label>
-   <textarea id="txt_import_area" placeholder="Füge hier deine komplette Liste mit allen Mannschaften ein..." style="width:100%; height:120px; background:#222; color:#fff; border:1px solid #555; padding:8px; border-radius:4px; box-sizing:border-box;"></textarea>
-   <button onclick="importTeamsFromTxt()" style="margin-top:5px; padding: 12px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; font-size: 14px;">Mannschaften dauerhaft im Browser-Gedächtnis speichern / 💾 überschreiben</button>
-  </div>
+<div class="import-box">
+ <label style="font-weight: bold; color: #ffcc00;"> 📋 Spieler-TXT hier einfügen und speichern (Format: Team, Nachname, Vorname, Passnummer):</label>
+ <textarea id="txt_import_area" placeholder="Füge hier deine komplette Liste mit allen Mannschaften ein..." style="width:100%; height:120px; background:#222; color:#fff; border:1px solid #555; padding:8px; border-radius:4px; box-sizing:border-box;"></textarea>
+ 
+ <!-- DIESER BUTTON IST NEU -->
+ <button onclick="ladeSpielerVonGitHub()" style="margin-top:5px; margin-bottom:5px; padding: 12px; background: #00cc66; color: #fff; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; font-size: 14px;">🔄 Spielerliste frisch von GitHub laden</button>
+ 
+ <button onclick="importTeamsFromTxt()" style="margin-top:5px; padding: 12px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; font-size: 14px;">Mannschaften dauerhaft im Browser-Gedächtnis speichern / überschreiben</button> 💾
+</div>
+
   <button onclick="resetWholeMatchday()" style="width: 100%; margin-top: 10px; padding: 10px; background: #cc3333; color: #fff; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; font-size: 12px;"> Neues Spiel starten (Daten leeren)</button> ⚠
   <div class="panel" style="margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
    <div>
@@ -334,6 +339,43 @@ let matchResults = {}; let substitutions = []; let playerScores = {}; let active
 let isMatchPlayable = false; let importedTeams = {};
 
 
+function ladeSpielerVonGitHub() {
+  // Der absolute Link direkt zur echten spieler.txt Rohdatei
+  const url = "https://githubusercontent.com";
+  const spielerTextarea = document.getElementById("txt_import_area");
+  
+  if (!spielerTextarea) return;
+
+  // Button visuell als "lädt..." markieren
+  const btn = event ? event.target : null;
+  if(btn) { btn.innerText = "⏳ Läde Daten..."; btn.style.opacity = "0.6"; }
+
+  fetch(url)
+    .then(response => {
+      if (!response.ok) throw new Error("Datei konnte nicht von GitHub abgerufen werden.");
+      return response.text();
+    })
+    .then(daten => {
+      if (daten && daten.trim().length > 0) {
+        // Schreibt den Text sauber in das Feld
+        spielerTextarea.value = daten.trim();
+        
+        // Verarbeitet die Daten direkt für die Dropdowns
+        importTeamsFromTxt();
+        
+        alert("Spieler erfolgreich von GitHub geladen und gespeichert!");
+      } else {
+        alert("Die Datei auf GitHub scheint leer zu sein.");
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      alert("Fehler beim GitHub-Abruf! Bitte überprüfe deine Internetverbindung oder ob die spieler.txt online existiert.");
+    })
+    .finally(() => {
+      if(btn) { btn.innerText = "🔄 Spielerliste frisch von GitHub laden"; btn.style.opacity = "1"; }
+    });
+}
 
 
 
@@ -792,34 +834,13 @@ document.addEventListener("DOMContentLoaded", () => {
   initTeamDropdowns();
 
   // 2. DANACH: Das frische Update von GitHub ziehen (Lokaler, sicherer Abruf)
-  const githubSpielerUrl = "./spieler.txt";
-  
-  if (spielerTextarea) {
-    fetch(githubSpielerUrl)
-      .then(response => {
-        if (!response.ok) throw new Error("Fehler beim Abrufen der Datei");
-        return response.text();
-      })
-      .then(daten => {
-        if (daten && daten.trim().length > 0) {
-          // Schreibt den Text jetzt direkt und ohne Umwege in das Feld
-          spielerTextarea.value = daten.trim();
-          console.log("Daten erfolgreich ins Feld geschrieben.");
-          
-          try {
-            importTeamsFromTxt();
-          } catch (e) {
-            console.error("Fehler beim Befüllen der Dropdowns:", e);
-          }
-        }
-      })
-      .catch(error => {
-        console.error("Abruf fehlgeschlagen, nutze Offline-Stand:", error);
-        if (spielerTextarea.value && spielerTextarea.value.trim()) {
-          try { importTeamsFromTxt(); } catch(e){}
-        }
-      });
-  }
+ 
+
+
+
+
+
+
 
   // 3. Alte Dropdown-Auswahlen wiederherstellen
   const savedDropdowns = localStorage.getItem("mkk_live_dropdown_state");
