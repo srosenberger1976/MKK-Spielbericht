@@ -1342,6 +1342,64 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
     renderTable();
+
+
+
+
+let deferredPrompt = null;
+
+// Wartet darauf, dass der Browser meldet, dass die App installierbar ist
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // Verhindert den Standard-Banner von Chrome
+  deferredPrompt = e;  // Speichert das Signal für später
+  
+  // Zeigt das Installations-Popup nach 3 Sekunden vollautomatisch an
+  setTimeout(() => {
+    const installPopup = document.getElementById("pwaInstallPopup");
+    if(installPopup) { installPopup.style.display = "block"; }
+  }, 3000);
+});
+
+// Führt die offizielle Installation aus, wenn der Spieler auf "Ja" klickt
+function triggerPwaInstallation() {
+  const installPopup = document.getElementById("pwaInstallPopup");
+  if(installPopup) { installPopup.style.display = "none"; }
+  
+  if (deferredPrompt) {
+    deferredPrompt.prompt(); // Öffnet das offizielle Handy-Installationsfenster
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') { console.log('Spieler hat die App installiert!'); }
+      deferredPrompt = null;
+    });
+  }
+}
+
+function closePwaPopup() {
+  const installPopup = document.getElementById("pwaInstallPopup");
+  if(installPopup) { installPopup.style.display = "none"; }
+}
+
+
+
+
+
 </script>
+
+<!-- Automatisches PWA Installations-Abfrage-Popup -->
+<div id="pwaInstallPopup" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #2a2a2a; border: 2px solid #ffcc00; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 99999; width: 90%; max-width: 400px; box-sizing: border-box; font-family: Arial, sans-serif;">
+  <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+    <div style="width: 35px; height: 35px; min-width: 35px;">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#cc3333" stroke="#fff" stroke-width="3"/><circle cx="50" cy="50" r="35" fill="#1a1a1a"/><circle cx="50" cy="50" r="25" fill="#00cc66"/><circle cx="50" cy="50" r="15" fill="#1a1a1a"/><circle cx="50" cy="50" r="5" fill="#ffcc00"/></svg>
+    </div>
+    <div style="font-size: 13px; font-weight: bold; color: #fff; line-height: 1.2;">Möchtest du den Dart-Bogen für schnellen Zugriff als App auf dem Startbildschirm installieren?</div>
+  </div>
+  <div style="display: flex; gap: 10px; justify-content: flex-end;">
+    <button onclick="closePwaPopup()" style="background: #444; color: #fff; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">Nein, danke</button>
+    <button onclick="triggerPwaInstallation()" style="background: #ffcc00; color: #000; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">Ja, installieren</button>
+  </div>
+</div>
+
+
+
 </body>
 </html>
