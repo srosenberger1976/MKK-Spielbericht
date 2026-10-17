@@ -349,15 +349,19 @@ function importTeamsFromTxt() {
    // DER FIX: Wenn der Name komplett leer ist (z.B. bei doppelten Kommas), springe zur nächsten Zeile!
    if(!rawName || rawName === "," || rawName.replace(/,/g, "").trim() === "") return;
    
-   if(rawName.includes(",")) {
+if(rawName.includes(",")) {
     const parts = rawName.split(",").map(n => n.trim());
-    // Nur zusammensetzen, wenn auch wirklich Fragmente da sind
+    // Prüft, ob wirklich Vorname UND Nachname existieren
     if(parts && parts.length >= 2 && parts[0] && parts[1]) { 
-     rawName = parts[1] + " " + parts[0]; 
+        rawName = parts[1] + " " + parts[0]; 
     } else if(parts && parts[0]) {
-     rawName = parts[0];
+        rawName = parts[0];
+    } else {
+        // Wenn es ein leerer Platzhalter ist, ignorieren und weitergehen
+        return; 
     }
-   }
+}
+
    
    if(!rawName.trim()) return;
    if(!importedTeams[teamName]) { importedTeams[teamName] = []; }
