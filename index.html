@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+
+ <!-- Manifest direkt im HTML eingebettet für die App-Installation -->
+ <link rel="manifest" href='data:application/manifest+json,{"name":"American Dart Live-Bogen","short_name":"MKK Dart","start_url":".","display":"standalone","background_color":"#1a1a1a","theme_color":"#ffcc00","orientation":"portrait","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%27http://w3.org viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2745%27 fill=%27%23cc3333%27 stroke=%27%23fff%27 stroke-width=%273%27/><circle cx=%2750%27 cy=%2750%27 r=%2735%27 fill=%27%231a1a1a%27/><circle cx=%2750%27 cy=%2750%27 r=%2725%27 fill=%27%2300cc66%27/><circle cx=%2750%27 cy=%2750%27 r=%2715%27 fill=%27%231a1a1a%27/><circle cx=%2750%27 cy=%2750%27 r=%275%27 fill=%27%23ffcc00%27/><path d=%27M50,5 L50,95 M5,50 L95,50 M18,18 L82,82 M18,82 L82,18%27 stroke=%27%23fff%27 stroke-width=%271%27 opacity=%270.3%27/></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}' />
+ 
+ <!-- Steuert die Leistenfarbe auf iPhones und iPads -->
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+ <meta name="apple-mobile-web-app-title" content="MKK Dart">
+ <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns=%27http://w3.org viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2745%27 fill=%27%23cc3333%27 stroke=%27%23fff%27 stroke-width=%273%27/><circle cx=%2750%27 cy=%2750%27 r=%2735%27 fill=%27%231a1a1a%27/><circle cx=%2750%27 cy=%2750%27 r=%2725%27 fill=%27%2300cc66%27/><circle cx=%2750%27 cy=%2750%27 r=%2715%27 fill=%27%231a1a1a%27/><circle cx=%2750%27 cy=%2750%27 r=%275%27 fill=%27%23ffcc00%27/></svg>">
+
+
+
+
     <meta charset="UTF-8">
     <title>American Dart - Liga MKK Live-Bogen</title>
     <style>
