@@ -5,6 +5,10 @@
  <!-- Manifest direkt im HTML eingebettet für die App-Installation -->
  <link rel="manifest" href='data:application/manifest+json,{"name":"American Dart Live-Bogen","short_name":"MKK Dart","start_url":".","display":"standalone","background_color":"#1a1a1a","theme_color":"#ffcc00","orientation":"portrait","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%27http://w3.org viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2745%27 fill=%27%23cc3333%27 stroke=%27%23fff%27 stroke-width=%273%27/><circle cx=%2750%27 cy=%2750%27 r=%2735%27 fill=%27%231a1a1a%27/><circle cx=%2750%27 cy=%2750%27 r=%2725%27 fill=%27%2300cc66%27/><circle cx=%2750%27 cy=%2750%27 r=%2715%27 fill=%27%231a1a1a%27/><circle cx=%2750%27 cy=%2750%27 r=%275%27 fill=%27%23ffcc00%27/><path d=%27M50,5 L50,95 M5,50 L95,50 M18,18 L82,82 M18,82 L82,18%27 stroke=%27%23fff%27 stroke-width=%271%27 opacity=%270.3%27/></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}' />
  
+
+<link rel="manifest" href="/MKK-Spielbericht/manifest.json">
+
+
  <!-- Steuert die Leistenfarbe auf iPhones und iPads -->
  <meta name="apple-mobile-web-app-capable" content="yes">
  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1387,18 +1391,75 @@ function closePwaPopup() {
 
 <!-- Automatisches PWA Installations-Abfrage-Popup -->
 <div id="pwaInstallPopup" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #2a2a2a; border: 2px solid #ffcc00; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 99999; width: 90%; max-width: 400px; box-sizing: border-box; font-family: Arial, sans-serif;">
-  <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-    <div style="width: 35px; height: 35px; min-width: 35px;">
-      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#cc3333" stroke="#fff" stroke-width="3"/><circle cx="50" cy="50" r="35" fill="#1a1a1a"/><circle cx="50" cy="50" r="25" fill="#00cc66"/><circle cx="50" cy="50" r="15" fill="#1a1a1a"/><circle cx="50" cy="50" r="5" fill="#ffcc00"/></svg>
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+        <div style="width: 35px; height: 35px; min-width: 35px;">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#cc3333" stroke="#fff" stroke-width="3"/><circle cx="50" cy="50" r="35" fill="#1a1a1a"/><circle cx="50" cy="50" r="25" fill="#cc3333"/><circle cx="50" cy="50" r="15" fill="#1a1a1a"/><circle cx="50" cy="50" r="5" fill="#ffcc00"/></svg>
+        </div>
+        <div style="font-size: 13px; font-weight: bold; color: #fff; line-height: 1.2;">Möchtest du den Dart-Bogen für schnellen Zugriff als App auf dem Startbildschirm installieren?</div>
     </div>
-    <div style="font-size: 13px; font-weight: bold; color: #fff; line-height: 1.2;">Möchtest du den Dart-Bogen für schnellen Zugriff als App auf dem Startbildschirm installieren?</div>
-  </div>
-  <div style="display: flex; gap: 10px; justify-content: flex-end;">
-    <button onclick="closePwaPopup()" style="background: #444; color: #fff; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">Nein, danke</button>
-    <button onclick="triggerPwaInstallation()" style="background: #ffcc00; color: #000; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">Ja, installieren</button>
-  </div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button onclick="closePwaPopup()" style="background: #444; color: #fff; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">Nein, danke</button>
+        <button onclick="triggerPwaInstallation()" style="background: #ffcc00; color: #000; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">Ja, installieren</button>
+    </div>
 </div>
 
+<script>
+  let deferredPrompt;
+  const popup = document.getElementById('pwaInstallPopup');
+
+  // 1. Service Worker registrieren
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/MKK-Spielbericht/sw.js')
+        .then(reg => console.log('Service Worker erfolgreich registriert!', reg))
+        .catch(err => console.error('Service Worker Registrierung fehlgeschlagen:', err));
+    });
+  }
+
+  // 2. Android/Chrome Installations-Event abfangen
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Verhindert, dass der Standard-Banner von Chrome aufpoppt
+    e.preventDefault();
+    // Speichert das Event für später
+    deferredPrompt = e;
+    
+    // Prüfen, ob der Nutzer das Popup schon mal weggeklickt hat (für 7 Tage ausblenden)
+    const isHidden = localStorage.getItem('pwa_popup_hidden_until');
+    if (!isHidden || Date.now() > parseInt(isHidden)) {
+        // Zeigt dein schönes gelbes Popup an
+        popup.style.display = 'block';
+    }
+  });
+
+  // Funktion für den "Ja, installieren"-Button
+  function triggerPwaInstallation() {
+    if (deferredPrompt) {
+      // Zeigt den echten Android-Installationsdialog
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Nutzer hat die App installiert');
+        }
+        popup.style.display = 'none';
+        deferredPrompt = null;
+      });
+    } else {
+      // Fallback für iOS (da Apple kein automatisches 'beforeinstallprompt' unterstützt)
+      alert("Auf dem iPhone/iPad klicke bitte unten im Safari-Browser auf das 'Teilen'-Symbol (Quadrat mit Pfeil nach oben) und wähle 'Zum Home-Bildschirm'.");
+      popup.style.display = 'none';
+    }
+  }
+
+  // Funktion für den "Nein, danke"-Button
+  function closePwaPopup() {
+    popup.style.display = 'none';
+    // Blendet das Popup für die nächsten 7 Tage aus, um den Nutzer nicht zu nerven
+    const hideUntil = Date.now() + (7 * 24 * 60 * 60 * 1000);
+    localStorage.setItem('pwa_popup_hidden_until', hideUntil);
+  }
+</script>
+
+</body>
 
 
 </body>
