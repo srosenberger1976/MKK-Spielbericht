@@ -760,102 +760,117 @@ function switchTab(tabName) {
  document.getElementById("btn_tab_" + tabName).classList.add("active");
 }
 
+
+
+
+
+
+
+
+
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
- if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/MKK-Spielbericht/sw.js')
-   .then(reg => { console.log('Service Worker registriert!'); reg.update(); })
-   .catch(err => console.error('Service Worker Fehler:', err));
- }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/MKK-Spielbericht/sw.js')
+    .then(reg => { console.log('Service Worker registriert!'); reg.update(); })
+    .catch(err => console.error('Service Worker Fehler:', err));
+  }
 
- const spielerTextarea = document.getElementById("txt_import_area") || document.querySelector("textarea"); 
+  const spielerTextarea = document.getElementById("txt_import_area") || document.querySelector("textarea"); 
 
- // 1. ZUERST: Lokales Backup aus dem Browser laden, falls vorhanden
- const savedTeams = localStorage.getItem("mkk_dart_teams");
- if (savedTeams) { importedTeams = JSON.parse(savedTeams); }
- const savedRawText = localStorage.getItem("mkk_dart_raw_text");
- if (savedRawText && spielerTextarea) { spielerTextarea.value = savedRawText; }
- 
- initTeamDropdowns();
+  // 1. ZUERST: Lokales Backup aus dem Browser laden, falls vorhanden
+  const savedTeams = localStorage.getItem("mkk_dart_teams");
+  if (savedTeams) { importedTeams = JSON.parse(savedTeams); }
+  const savedRawText = localStorage.getItem("mkk_dart_raw_text");
+  if (savedRawText && spielerTextarea) { spielerTextarea.value = savedRawText; }
+  initTeamDropdowns();
 
-
-
-
-
-
-
-
-
-
-
-  // 2. DANACH: Das frische Update von GitHub ziehen und eintragen
+  // 2. DANACH: Das frische Update von GitHub ziehen
   const githubSpielerUrl = "https://githubusercontent.com";
   
   if (spielerTextarea) {
     fetch(githubSpielerUrl)
       .then(response => {
-        if (!response.ok) throw new Error("Fehler beim Abrufen der GitHub-Datei");
+        if (!response.ok) throw new Error("Netzwerk-Antwort war nicht OK");
         return response.text();
       })
       .then(daten => {
         if (daten && daten.trim().length > 0) {
-          // Zuerst den Text SICHER in das Textfeld schreiben (damit es nicht leer bleibt!)
+          // Schreibt den Text sofort rein
           spielerTextarea.value = daten.trim();
-          console.log("Text erfolgreich ins Feld eingetragen.");
+          console.log("GitHub-Daten erfolgreich ins Textfeld geladen.");
           
-          // Danach versuchen wir die Dropdowns zu befüllen
+          // Versuche die Dropdowns fehlerfrei zu befüllen
           try {
             importTeamsFromTxt();
-            console.log("Spieler erfolgreich in Dropdowns geladen!");
-          } catch (importError) {
-            console.error("Fehler beim Befüllen der Dropdowns, aber Text ist da:", importError);
+          } catch (e) {
+            console.error("Fehler beim Verarbeiten des Textes:", e);
           }
         }
       })
       .catch(error => {
-        console.error("GitHub-Live-Update fehlgeschlagen, nutze lokalen Stand:", error);
-        if (spielerTextarea.value && spielerTextarea.value.trim()) { 
+        console.error("Direkter GitHub-Abruf fehlgeschlagen. Nutze Offline-Stand.", error);
+        // Falls der Live-Abruf blockiert wird, wird das lokale Backup verarbeitet
+        if (spielerTextarea.value && spielerTextarea.value.trim()) {
           try { importTeamsFromTxt(); } catch(e){}
         }
       });
   }
 
+  // 3. Alte Dropdown-Auswahlen wiederherstellen
+  const savedDropdowns = localStorage.getItem("mkk_live_dropdown_state");
+  if(savedDropdowns) {
+    const dropdownState = JSON.parse(savedDropdowns);
+    if(dropdownState["team_home"]) { 
+      document.getElementById("team_home").value = dropdownState["team_home"]; 
+      handleTeamSelection('H'); 
+    }
+    if(dropdownState["team_guest"]) { 
+      document.getElementById("team_guest").value = dropdownState["team_guest"]; 
+      handleTeamSelection('G'); 
+    }
+    Object.keys(dropdownState).forEach(id => {
+      const el = document.getElementById(id); 
+      if(el && id !== "team_home" && id !== "team_guest") { el.value = dropdownState[id]; }
+    });
+    if(dropdownState["team_home"]) rebuildPlayerDropdowns('H', false);
+    if(dropdownState["team_guest"]) rebuildPlayerDropdowns('G', false);
+  }
 
- 
- // 3. Alte Dropdown-Auswahlen wiederherstellen
- const savedDropdowns = localStorage.getItem("mkk_live_dropdown_state");
- if(savedDropdowns) {
-  const dropdownState = JSON.parse(savedDropdowns);
-  if(dropdownState["team_home"]) { document.getElementById("team_home").value = dropdownState["team_home"]; handleTeamSelection('H'); }
-  if(dropdownState["team_guest"]) { document.getElementById("team_guest").value = dropdownState["team_guest"]; handleTeamSelection('G'); }
-  Object.keys(dropdownState).forEach(id => {
-   const el = document.getElementById(id); if(el && id !== "team_home" && id !== "team_guest") { el.value = dropdownState[id]; }
+  const loadResults = localStorage.getItem("mkk_live_match_results"); 
+  if(loadResults) matchResults = JSON.parse(loadResults);
+  const loadSubs = localStorage.getItem("mkk_live_substitutions");
+  if(loadSubs) { substitutions = JSON.parse(loadSubs); updatePrintSubstitutions(); }
+  const loadScores = localStorage.getItem("mkk_live_player_scores"); 
+  if(loadScores) playerScores = JSON.parse(loadScores);
+
+  const dateInput = document.getElementById("meta_date");
+  if (dateInput && !dateInput.value) {
+    const today = new Date(); 
+    const dd = String(today.getDate()).padStart(2, '0'); 
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); 
+    const yyyy = today.getFullYear();
+    dateInput.value = `${dd}.${mm}.${yyyy}`;
+  }
+
+  renderTable(); 
+  syncMetaToLabels(); 
+  validateRosterAndSetup();
+
+  document.querySelectorAll("select, input").forEach(el => {
+    el.addEventListener("change", () => {
+      if(el.id === "team_home") { handleTeamSelection('H'); }
+      else if(el.id === "team_guest") { handleTeamSelection('G'); }
+      else if(el.id.startsWith("p_H") || el.id === "captain_home") { rebuildPlayerDropdowns('H', false); }
+      else if(el.id.startsWith("p_G") || el.id === "captain_guest") { rebuildPlayerDropdowns('G', false); }
+      validateRosterAndSetup(); 
+      syncMetaToLabels(); 
+      saveActiveDropdowns();
+    });
+    el.addEventListener("input", () => { syncMetaToLabels(); saveActiveDropdowns(); });
   });
-  if(dropdownState["team_home"]) rebuildPlayerDropdowns('H', false);
-  if(dropdownState["team_guest"]) rebuildPlayerDropdowns('G', false);
- }
- 
- const loadResults = localStorage.getItem("mkk_live_match_results"); if(loadResults) matchResults = JSON.parse(loadResults);
- const loadSubs = localStorage.getItem("mkk_live_substitutions"); if(loadSubs) { substitutions = JSON.parse(loadSubs); updatePrintSubstitutions(); }
- const loadScores = localStorage.getItem("mkk_live_player_scores"); if(loadScores) playerScores = JSON.parse(loadScores);
- 
- const dateInput = document.getElementById("meta_date");
- if (dateInput && !dateInput.value) {
-  const today = new Date(); const dd = String(today.getDate()).padStart(2, '0'); const mm = String(today.getMonth() + 1).padStart(2, '0'); const yyyy = today.getFullYear();
-  dateInput.value = `${dd}.${mm}.${yyyy}`;
- }
- 
- renderTable(); syncMetaToLabels(); validateRosterAndSetup();
- 
- document.querySelectorAll("select, input").forEach(el => {
-  el.addEventListener("change", () => {
-   if(el.id === "team_home") { handleTeamSelection('H'); }
-   else if(el.id === "team_guest") { handleTeamSelection('G'); }
-   else if(el.id.startsWith("p_H") || el.id === "captain_home") { rebuildPlayerDropdowns('H', false); }
-   else if(el.id.startsWith("p_G") || el.id === "captain_guest") { rebuildPlayerDropdowns('G', false); }
-   validateRosterAndSetup(); syncMetaToLabels(); saveActiveDropdowns();
-  });
-  el.addEventListener("input", () => { syncMetaToLabels(); saveActiveDropdowns(); });
- });
 });
 
 
