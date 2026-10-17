@@ -6,10 +6,10 @@ DC HighFlyer 2,Naumann, Stefan,104
 DC HighFlyer 2,Rüffer, Dustin,102
 DC HighFlyer 2,Rosenberger, Diana,106
 DC HighFlyer 2,Rosenberger, David,98
-DC HighFlyer 2,Bernhard, Prang,,99
-DC HighFlyer 2,Robin, Blos,,105
+DC HighFlyer 2,Bernhard, Prang,99
+DC HighFlyer 2,Robin, Blos,105
 DC HighFlyer 2,Schüssler, Frank,107
-DC HighFlyer 2,Test, Test,108
+DC HighFlyer 2,,108
 DC HighFlyer 2,,109
 DC HighFlyer 2,,110
 DC HighFlyer 2,,111
