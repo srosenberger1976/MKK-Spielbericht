@@ -1,5 +1,5 @@
 // Versions-Nummer erhöht (v2), um alten Cache radikal zu löschen
-const CACHE_NAME = 'mkk-dart-v3';
+const CACHE_NAME = 'mkk-dart-v4';
 const ASSETS = [
   '/MKK-Spielbericht/',
   '/MKK-Spielbericht/index.html',
